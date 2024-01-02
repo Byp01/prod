@@ -1,0 +1,248 @@
+
+(function VGuard_v1() {
+
+    const self = this;
+    const log = console.log;
+
+    const myProxy = self.Proxy;
+    let isDev = false;
+
+    self.Animation.frame = true;
+
+    (function disableInternal() {
+
+        // for (const name in self.console) {
+        //     self.console[name] = (function() {});
+        // }
+
+        self.localStorage.getItem = function () {};
+        self.localStorage.setItem = function () {};
+        self.localStorage.clear   = function () {};
+
+
+        self.setInterval = function () {};
+        self.dispatchEvent = function () {};
+        document.dispatchEvent = function() {};
+
+        Array.prototype.forEach = function () {};
+
+        self.Object.defineProperties = function () {};
+        self.Object.defineProperty = function () {};
+
+        self.MouseEvent = class T {};
+
+    })();
+
+    function stopScreen() {
+        return;
+        let i = 0;
+        for ( ; i < 999; i--) {
+
+        }
+    }
+
+    function detectConsoleOpen(event) {
+        return;
+        if (
+            (event.ctrlKey || event.metaKey) && (event.shiftKey) && (event.keyCode === 73) ||
+            (event.ctrlKey || event.metaKey) && (event.shiftKey) && (event.keyCode === 74) ||
+            (event.ctrlKey || event.metaKey) && (event.shiftKey) && (event.keyCode === 75) ||
+            (event.keyCode === 123) || (event.ctrlKey && event.keyCode === 67) ||
+            (event.ctrlKey || event.metaKey) && (event.shiftKey) && (event.keyCode === 73) ||
+            (event.keyCode === 123) || (event.ctrlKey && event.shiftKey && event.keyCode === 73)
+        ) {
+            alert(`Reeeeeeeeeeee`)
+            stopScreen();
+        }
+    }
+
+    function isNativeFunction(func) {
+        let functionString = String(func);      
+        return /^\s*function\s+[a-zA-Z0-9_]+\(\)\s+\{(\s*\[native code\]\s*)?\}/.test(functionString);
+    }
+
+    function checkNativeFunctions() {
+        if (!isNativeFunction(CanvasRenderingContext2D.prototype.drawImage)) {
+            stopScreen();
+        }
+
+        if (!isNativeFunction(self.WebSocket.prototype.send)) {
+            stopScreen();
+        }
+
+        if (!isNativeFunction(self.requestAnimationFrame)) {
+            stopScreen();
+        }
+
+        if (String(WebSocket.prototype.send.toString).match(/=>|return/)) {
+            stopScreen();
+        }
+    }
+
+    function checkClientSafe() {
+        if (isDev) return;
+
+        if (typeof self.SafeClient != "function") {
+            stopScreen();
+        }
+
+        if (String(self.SafeClient).length != 1757095) {
+            stopScreen();
+        }
+    }
+
+    function decodeNumber(encodedString) {
+        let binaryString = '';
+
+        for (let i = 0; i < encodedString.length; i++) {
+            let char = encodedString.charCodeAt(i);
+            let binaryChar = char.toString(2);
+            binaryString += '0'.repeat(8 - binaryChar.length) + binaryChar;
+        }
+
+        return parseInt(binaryString, 2);
+    }
+
+    function captchaVerify(buffer) {
+        let blob = new Blob([buffer], {type: 'image/png'});
+        let url = URL.createObjectURL(blob);
+
+        const img = new Image();
+        img.src = url;
+
+        img.onload = function() {
+            const screenWidth = window.innerWidth;
+            const screenHeight = window.innerHeight;
+
+            const imgElement = document.createElement('img');
+            imgElement.src = img.src;
+
+            imgElement.width = 300;
+            imgElement.height = 120;
+
+            const posX = (screenWidth - imgElement.width) / 2;
+            const posY = (screenHeight - imgElement.height) / 2;
+
+            imgElement.style.position = 'absolute';
+            imgElement.style.left = posX + 'px';
+            imgElement.style.top = posY + 'px';
+
+            document.body.appendChild(imgElement);
+
+            imgElement.onload = () => {
+                setTimeout(() => {
+                    verifyNumber = prompt(`Please verify that you are human!`);
+                    imgElement.remove();
+                }, 250);
+            }
+        };
+    }
+
+    self.setInterval = new Proxy(setInterval, {
+        apply(target, _this, args) {
+            stopScreen();
+        }
+    })
+
+    document.addEventListener("keydown", detectConsoleOpen);
+    document.addEventListener("contextmenu", event => {
+        event.preventDefault();
+    })
+
+    let lastClick = -1;
+    let verifyNumber = "";
+
+    self.onmousedown = function() {
+        lastClick = Math.floor(performance.now())
+    };
+
+    function isAutoSpikeDetected() {
+        let packetSentTime = Math.floor(performance.now())
+        return lastClick + 50 <= packetSentTime;
+    }
+
+    function aaof(packetData) {
+        packetData[3] = 5;
+        packetData[18] = verifyNumber;
+
+        return packetData;
+    }
+
+    let wsCounter = 0;
+
+    self.WebSocket = new myProxy(WebSocket, {
+        construct(target, args) {
+
+            verifyNumber = "";
+
+            checkClientSafe();
+            const websocket = new target(...args);
+
+            if (wsCounter >= 1) {
+                websocket.close();
+            }
+
+            websocket.addEventListener("open", () => {
+                wsCounter++;
+            });
+
+            websocket.addEventListener("close", () => {
+                wsCounter--;
+            });
+
+            websocket.addEventListener("message", msg => {
+                let messageData = msg.data;
+                if (typeof messageData === "string") {
+                    messageData = JSON.parse(messageData);
+                    switch (messageData[0]) {
+                        case 90: {
+                            alert("Captcha verification has expired")
+                            break;
+                        }
+                        case 91: {
+                            alert("Captcha failed please try again");
+                            break;
+                        }
+                    }
+                } else {
+                    messageData = new Uint8Array(messageData);
+                    switch (messageData[0]) {
+                        case 180: {
+                            captchaVerify(messageData.slice(1));
+                            break;
+                        }
+                    }
+                }
+            })
+
+            websocket.send = new Proxy(websocket.send, {
+                apply(target, _this, args) {
+        
+                    checkNativeFunctions();
+
+                    if (!self.AnimationTimeline.frick && false) {
+                        stopScreen();
+                    }
+        
+                    let packetData = JSON.parse(args[0]);
+                    if (packetData[0] === 10 && isAutoSpikeDetected()) 
+                        return;
+                    
+                    if (typeof packetData[0] === "string" && packetData.length > 17) {
+                        try {
+                            let data = aaof(packetData);
+                            args[0] = JSON.stringify(data);
+                        } catch {
+
+                        }
+                    }
+        
+                    return target.apply(_this, args);
+                }
+            })
+
+            return websocket;
+        }
+    });
+
+})();
